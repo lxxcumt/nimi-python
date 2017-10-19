@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file was generated
 import ctypes
+import numpy
 
 from nidmm import attributes
 from nidmm import enums
@@ -2389,5 +2390,38 @@ class Session(_SessionBase):
         errors.handle_error(self, error_code, ignore_warnings=False, is_error_handling=False)
         return int(self_test_result_ctype.value), self_test_message_ctype.value.decode(self._encoding)
 
+    def fetch_waveform_numpy(self, array_size, maximum_time=-1):
+        '''fetch_waveform
+
+        For the NI 4080/4081/4082 and the NI 4070/4071/4072, returns an array of
+        values from a previously initiated waveform acquisition. You must call
+        _initiate before calling this function.
+
+        Args:
+            maximum_time (int): Specifies the **maximum_time** allowed for this function to complete in
+                milliseconds. If the function does not complete within this time
+                interval, the function returns the NIDMM_ERROR_MAX_TIME_EXCEEDED
+                error code. This may happen if an external trigger has not been
+                received, or if the specified timeout is not long enough for the
+                acquisition to complete.
+
+                The valid range is 0–86400000. The default value is
+                NIDMM_VAL_TIME_LIMIT_AUTO (-1). The DMM calculates the timeout
+                automatically.
+            array_size (int): Specifies the number of waveform points to return. You specify the total
+                number of points that the DMM acquires in the **Waveform Points**
+                parameter of configure_waveform_acquisition. The default value is
+                1.
+
+        Returns:
+            waveform_array (list of float): **Waveform Array** is an array of measurement values stored in waveform
+                data type.
+            actual_number_of_points (int): Indicates the number of measured values actually retrieved from the DMM.
+        '''
+        waveform_array_ctype = numpy.empty(array_size, dtype=numpy.float64, order='C')
+        actual_number_of_points_ctype = visatype.ViInt32(0)
+        error_code = self._library.niDMM_FetchWaveform_numpy(self._vi, maximum_time, array_size, waveform_array_ctype, ctypes.pointer(actual_number_of_points_ctype))
+        errors.handle_error(self, error_code, ignore_warnings=False, is_error_handling=False)
+        return array_size, int(actual_number_of_points_ctype.value)
 
 
